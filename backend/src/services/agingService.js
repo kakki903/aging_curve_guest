@@ -1,20 +1,21 @@
 const agingRepository = require("../repositories/agingRepository");
+const resultRepository = require("../repositories/resultRepository");
+const resultService = require("./resultService");
 const OpenAI = require("openai");
 const openai = new OpenAI({
   apiKey: process.env.OPEN_AI_KEY_QA,
 });
 
 const PERDICTION_MODEL = "gpt-4o-mini";
-const FUNCTION_NAME = "submit_saju_analysis"; // 정적 분석 보고서 제출 함수명으로 변경
+const FUNCTION_NAME = "submit_saju_analysis"; // 정적 분석 보고서 제출 함수명
 
-// 1. OpenAI Tools (함수 스키마) 정의 - 정적 사주 분석 구조
+// 1. OpenAI Tools (함수 스키마) 정의 - 정적 사주 분석 구조 (길이 지침 제거)
 const analysisSchema = {
   type: "object",
   properties: {
     analysis_summary: {
       type: "object",
-      description:
-        "사주 분석의 핵심 요약 및 테마. 내용은 재치 있고 흥미로워야 합니다.",
+      description: "사주 분석의 핵심 요약 및 테마.",
       properties: {
         theme: {
           type: "string",
@@ -24,7 +25,7 @@ const analysisSchema = {
         advice: {
           type: "string",
           description:
-            "현재 사주를 기반으로 한 가장 중요한 개운(開運) 조언을 구체적이고 긍정적인 언어로 서술. 각 항목은 최소 5문장 이상이어야 합니다. 내용을 최대한 길게 작성하세요.",
+            "현재 사주를 기반으로 한 가장 중요한 개운(開運) 조언을 구체적이고 긍정적인 언어로 서술.",
         },
       },
       required: ["theme", "advice"],
@@ -37,17 +38,16 @@ const analysisSchema = {
         core_trait: {
           type: "string",
           description:
-            "타고난 핵심 성격 및 천성 (재미있는 비유와 함께 최소 5문장 이상 자세히 서술하여 내용을 길게 만드세요).",
+            "타고난 핵심 성격 및 천성 (재미있는 비유와 함께 상세히 서술).",
         },
         strength: {
           type: "string",
-          description:
-            "강점으로 발현되는 특성과 잠재력. 최소 5문장 이상 자세히 서술하여 내용을 길게 만드세요.",
+          description: "강점으로 발현되는 특성과 잠재력.",
         },
         weakness: {
           type: "string",
           description:
-            "주의해야 할 단점이나 극복해야 할 과제. 비판보다는 조언 형태로. 최소 5문장 이상 자세히 서술하여 내용을 길게 만드세요.",
+            "주의해야 할 단점이나 극복해야 할 과제 (비판보다는 조언 형태로).",
         },
       },
       required: ["core_trait", "strength", "weakness"],
@@ -59,18 +59,16 @@ const analysisSchema = {
       properties: {
         love_style: {
           type: "string",
-          description:
-            "연애나 결혼 생활에서의 기본적인 태도와 애정운의 경향. 최소 5문장 이상 자세히 서술하여 내용을 길게 만드세요.",
+          description: "연애나 결혼 생활에서의 기본적인 태도와 애정운의 경향.",
         },
         partner_affinity: {
           type: "string",
           description:
-            "가장 잘 맞는 배우자/파트너의 특징과 인연의 깊이 (예: '고요한 물가 같은 사람', '활기찬 불꽃 같은 사람'). 최소 5문장 이상 자세히 서술하여 내용을 길게 만드세요.",
+            "가장 잘 맞는 배우자/파트너의 특징과 인연의 깊이 (예: '고요한 물가 같은 사람', '활기찬 불꽃 같은 사람').",
         },
         social_pattern: {
           type: "string",
-          description:
-            "대인관계에서 반복되는 패턴과 개선점. 최소 5문장 이상 자세히 서술하여 내용을 길게 만드세요.",
+          description: "대인관계에서 반복되는 패턴과 개선점.",
         },
       },
       required: ["love_style", "partner_affinity", "social_pattern"],
@@ -83,17 +81,16 @@ const analysisSchema = {
         wealth_type: {
           type: "string",
           description:
-            "재물을 모으는 타고난 방식이나 재복의 형태 (예: '정보형 투자', '안정적인 근로형'). 최소 5문장 이상 자세히 서술하여 내용을 길게 만드세요.",
+            "재물을 모으는 타고난 방식이나 재복의 형태 (예: '정보형 투자', '안정적인 근로형').",
         },
         best_career: {
           type: "string",
           description:
-            "가장 성공할 확률이 높은 분야의 직업군을 3가지 이상 제시하고 그 이유를 설명. 최소 5문장 이상 자세히 서술하여 내용을 길게 만드세요.",
+            "가장 성공할 확률이 높은 분야의 직업군을 3가지 이상 제시하고 그 이유를 설명.",
         },
         financial_advice: {
           type: "string",
-          description:
-            "재물을 지키고 키우기 위한 구체적이고 유머러스한 조언. 최소 5문장 이상 자세히 서술하여 내용을 길게 만드세요.",
+          description: "재물을 지키고 키우기 위한 구체적이고 유머러스한 조언.",
         },
       },
       required: ["wealth_type", "best_career", "financial_advice"],
@@ -127,11 +124,11 @@ const agingService = {
     return currentYear - birthYear + 1;
   },
 
-  // 2. 프롬프트 데이터 생성 함수 (정적 분석으로 수정 및 지침 강화)
+  // 2. 프롬프트 데이터 생성 함수
   createPromptData: (birth, gender, isMarried, isDating) => {
     const currentKoreanAge = agingService.calculateKoreanAge(birth);
 
-    // 프롬프트를 정적 분석에 맞게 수정
+    // 프롬프트 지침 강화: 상세한 길이는 여기서 강조
     const prompt = `
         당신은 유머와 재치가 넘치는 전문 역술가 AI입니다.
         사용자의 사주 정보:
@@ -173,6 +170,25 @@ const agingService = {
       isDating
     );
 
+    // checkResultData 호출 시 안전하게 옵셔널 체이닝 처리된 값을 받음
+    const checkData = await agingService.checkResultData(
+      birth,
+      gender,
+      isMarried,
+      isDating
+    );
+
+    if (checkData) {
+      console.log("기존 분석 결과가 있어 DB에서 로드합니다.");
+      const resultData = await resultService.getId(checkData);
+      console.log(resultData);
+      return {
+        success: true,
+        data: resultData,
+        resultId: checkData,
+      };
+    }
+
     try {
       // 시스템 지침을 강화하여 모델의 페르소나와 서술 스타일을 더욱 명확히 함
       const completion = await openai.chat.completions.create({
@@ -181,7 +197,7 @@ const agingService = {
           {
             role: "system",
             content:
-              "당신은 사주팔자를 분석하여 재미있고 매력적인 운세를 예측하는 전문 역술가 AI입니다. 모든 내용은 긍정적이고 재치 있는 비유와 최소 5~7문장 이상의 상세한 설명을 사용하여 사용자에게 즐거움을 제공해야 합니다.",
+              "당신은 사주팔자를 분석하여 재미있고 매력적인 운세를 예측하는 전문 역술가 AI입니다. 모든 내용은 긍정적이고 재치 있는 비유와 최소 5~7문장 이상의 상세한 설명을 사용하여 사용자에게 즐거움을 제공해야 합니다. 반드시 아래 지정된 함수 스키마를 완벽하게 준수하여 JSON 보고서를 생성하세요.",
           },
           { role: "user", content: prompt },
         ],
@@ -224,9 +240,22 @@ const agingService = {
         };
       }
     } catch (e) {
-      console.error("❌ OpenAI API 호출 중 오류 발생:", e);
+      // JSON.parse 오류나 API 오류 발생 시
+      console.error("❌ OpenAI API 호출 또는 JSON 파싱 중 오류 발생:", e);
       return { success: false, message: "AI 분석 또는 서버 저장 중 오류 발생" };
     }
+  },
+
+  // 4. checkResultData 수정 (옵셔널 체이닝 적용)
+  checkResultData: async (birth, gender, isMarried, isDating) => {
+    const profileData = await resultRepository.getProfile(
+      birth,
+      gender,
+      isMarried,
+      isDating
+    );
+    // profileData가 null이더라도 안전하게 undefined 반환
+    return profileData?.result_id;
   },
 };
 

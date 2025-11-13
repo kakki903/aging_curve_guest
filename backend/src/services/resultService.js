@@ -5,6 +5,16 @@ const resultService = {
     const result = await resultRepository.getId(resultId);
     return result;
   },
+
+  getProfile: async (birth, gender, isMarried, isDating) => {
+    const result = await resultRepository.getProfile(
+      birth,
+      gender,
+      isMarried,
+      isDating
+    );
+    return result;
+  },
 };
 
 module.exports = resultService;
