@@ -3,12 +3,39 @@ import { useRouter } from "next/router";
 import { post } from "@/utils/api";
 import Script from "next/script";
 
+// =========================
+// 🔄 인라인 스피너
+// =========================
+const InlineSpinner = () => (
+  <>
+    <div
+      style={{
+        width: "30px",
+        height: "30px",
+        border: "4px solid rgba(0,0,0,0.2)",
+        borderTop: "4px solid #FEE500",
+        borderRadius: "50%",
+        animation: "spin 0.9s linear infinite",
+        margin: "10px auto 0",
+      }}
+    ></div>
+
+    <style jsx global>{`
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    `}</style>
+  </>
+);
+
 const InitFortunePage = () => {
   const router = useRouter();
 
-  // ------------------------------
-  // STATE
-  // ------------------------------
   const [step, setStep] = useState(1);
   const [year, setYear] = useState("");
   const [month, setMonth] = useState("");
@@ -26,9 +53,9 @@ const InitFortunePage = () => {
 
   const MAX_STEP = 5;
 
-  // ------------------------------
-  // SELECT OPTIONS
-  // ------------------------------
+  // =========================
+  // 옵션 생성
+  // =========================
   const currentYear = new Date().getFullYear();
   const startYear = 1940;
 
@@ -46,9 +73,9 @@ const InitFortunePage = () => {
     return Array.from({ length: lastDay }, (_, i) => i + 1);
   }, [year, month]);
 
-  // ------------------------------
-  // HANDLERS
-  // ------------------------------
+  // =========================
+  // 핸들러
+  // =========================
   const handleAdditionalChange = (e) => {
     const { name, value } = e.target;
 
@@ -145,9 +172,9 @@ const InitFortunePage = () => {
     }
   };
 
-  // ------------------------------
-  // PROGRESS BAR
-  // ------------------------------
+  // =========================
+  // 진행 바
+  // =========================
   const progressWidth = useMemo(() => {
     const s = Math.min(step, MAX_STEP);
     if (s <= 1) return "0%";
@@ -155,193 +182,9 @@ const InitFortunePage = () => {
     return `${Math.min(pct, 100)}%`;
   }, [step]);
 
-  // ------------------------------
-  // STYLE
-  // ------------------------------
-  const styles = {
-    page: {
-      maxWidth: "600px",
-      margin: "50px auto",
-      padding: "35px",
-      borderRadius: "25px",
-      background: "#ffffffaa",
-      backdropFilter: "blur(6px)",
-      boxShadow: "0 20px 50px rgba(120, 80, 200, 0.2)",
-      border: "1px solid #eee",
-      fontFamily: "'Inter', sans-serif",
-    },
-    title: {
-      textAlign: "center",
-      fontSize: "32px",
-      fontWeight: "900",
-      color: "#6a0dad",
-      marginBottom: "10px",
-    },
-    subtitle: {
-      textAlign: "center",
-      fontSize: "16px",
-      color: "#8d99ae",
-      marginBottom: "35px",
-    },
-
-    progressContainer: {
-      position: "relative",
-      marginBottom: "40px",
-      padding: "0 20px",
-    },
-    progressBar: {
-      height: "5px",
-      background: "#eee",
-      borderRadius: "3px",
-      position: "relative",
-    },
-    progressFill: {
-      height: "100%",
-      width: progressWidth,
-      background: "linear-gradient(90deg, #8e44ad, #9b59b6)",
-      transition: "0.4s",
-      borderRadius: "3px",
-    },
-
-    card: {
-      borderRadius: "20px",
-      padding: "28px",
-      background: "#faf8ff",
-      border: "2px solid #d4b5ef",
-      boxShadow: "0 10px 25px rgba(160, 100, 220, 0.15)",
-      animation: "fadeIn 0.4s ease",
-      minHeight: "220px",
-    },
-
-    label: {
-      fontSize: "20px",
-      fontWeight: "800",
-      color: "#6a0dad",
-      marginBottom: "18px",
-      display: "flex",
-      alignItems: "center",
-      gap: "10px",
-    },
-
-    select: {
-      width: "100%",
-      padding: "14px",
-      borderRadius: "12px",
-      border: "1px solid #ccc",
-      fontSize: "16px",
-      background: "#fff",
-    },
-    dateRow: {
-      display: "flex",
-      gap: "12px",
-    },
-    input: {
-      width: "100%",
-      padding: "14px",
-      borderRadius: "12px",
-      border: "1px solid #ccc",
-      fontSize: "16px",
-      background: "#fff",
-    },
-
-    radioGroup: {
-      display: "flex",
-      gap: "20px",
-    },
-    radio: (checked) => ({
-      padding: "14px 20px",
-      borderRadius: "12px",
-      border: checked ? "2px solid #8e44ad" : "2px solid #ccc",
-      background: checked ? "#f3e7ff" : "#fff",
-      fontWeight: "700",
-      cursor: "pointer",
-      transition: "0.25s",
-      boxShadow: checked ? "0 0 10px rgba(140,70,200,0.25)" : "none",
-    }),
-    radioInput: { display: "none" },
-
-    error: {
-      marginTop: "15px",
-      padding: "12px",
-      borderRadius: "10px",
-      background: "#ffe6e6",
-      color: "#d63031",
-      border: "1px solid #ff7675",
-      textAlign: "center",
-      fontWeight: "700",
-    },
-
-    buttonRow: {
-      display: "flex",
-      justifyContent: "space-between",
-      gap: "12px",
-      marginTop: "25px",
-    },
-    btn: (primary) => ({
-      flex: 1,
-      padding: "16px",
-      borderRadius: "12px",
-      fontWeight: "800",
-      border: "none",
-      cursor: "pointer",
-      background: primary
-        ? "linear-gradient(45deg, #8e44ad, #9b59b6)"
-        : "#f0f0f0",
-      color: primary ? "white" : "#555",
-      boxShadow: primary ? "0 8px 18px rgba(155, 89, 182, 0.35)" : "none",
-      transition: "0.3s",
-    }),
-
-    submitButton: {
-      marginTop: "25px",
-      padding: "18px",
-      width: "100%",
-      borderRadius: "12px",
-      border: "none",
-      background: "linear-gradient(45deg, #e67e22, #f39c12)",
-      color: "white",
-      fontSize: "20px",
-      fontWeight: "800",
-      cursor: "pointer",
-      boxShadow: "0 10px 20px rgba(230, 126, 34, 0.35)",
-    },
-
-    loadingText: {
-      marginTop: "20px",
-      fontSize: "18px",
-      fontWeight: "900",
-      color: "#e67e22",
-      textAlign: "center",
-    },
-    loadingBar: {
-      marginTop: "10px",
-      width: "100%",
-      height: "14px",
-      background: "#fbe9e7",
-      borderRadius: "8px",
-      overflow: "hidden",
-    },
-    loadingFill: {
-      width: "100%",
-      height: "100%",
-      background: "#e67e22",
-    },
-  };
-
-  const RadioOption = ({ name, value, checked, label, onChange }) => (
-    <label style={styles.radio(checked)}>
-      <input
-        style={styles.radioInput}
-        type="radio"
-        name={name}
-        value={value}
-        checked={checked}
-        onChange={onChange}
-      />
-      {label}
-    </label>
-  );
-
+  // =========================
+  // 리뷰 데이터
+  // =========================
   const reviewData = useMemo(() => {
     return [
       { label: "생년월일", value: `${year}년 ${month}월 ${day}일` },
@@ -367,7 +210,7 @@ const InitFortunePage = () => {
 
   return (
     <div style={styles.page}>
-      {/* AdSense Script */}
+      {/* ADSENSE */}
       <Script
         id="adsense-init"
         strategy="afterInteractive"
@@ -380,10 +223,10 @@ const InitFortunePage = () => {
         }}
       />
 
-      <h1 style={styles.title}>🔮 당신의 운명 분석</h1>
-      <p style={styles.subtitle}>단계별로 정보를 입력해주세요.</p>
+      <h1 style={styles.title}>🔮 사주 분석 시작하기</h1>
+      <p style={styles.subtitle}>필요한 정보를 단계별로 입력해주세요.</p>
 
-      {/* 광고 위치 */}
+      {/* 광고 */}
       <div style={{ margin: "20px 0" }}>
         <ins
           className="adsbygoogle"
@@ -402,14 +245,16 @@ const InitFortunePage = () => {
       {/* Progress */}
       <div style={styles.progressContainer}>
         <div style={styles.progressBar}>
-          <div style={styles.progressFill}></div>
+          <div style={{ ...styles.progressFill, width: progressWidth }}></div>
         </div>
       </div>
 
       <form onSubmit={handleSubmit}>
+        {/* STEP 1 */}
         {step === 1 && (
           <div style={styles.card}>
             <div style={styles.label}>🗓️ 생년월일</div>
+
             <div style={styles.dateRow}>
               <select
                 value={year}
@@ -449,6 +294,7 @@ const InitFortunePage = () => {
           </div>
         )}
 
+        {/* STEP 2 */}
         {step === 2 && (
           <div style={styles.card}>
             <div style={styles.label}>⏰ 태어난 시간</div>
@@ -462,9 +308,11 @@ const InitFortunePage = () => {
           </div>
         )}
 
+        {/* STEP 3 */}
         {step === 3 && (
           <div style={styles.card}>
             <div style={styles.label}>🚻 성별</div>
+
             <div style={styles.radioGroup}>
               <RadioOption
                 label="남자"
@@ -484,9 +332,11 @@ const InitFortunePage = () => {
           </div>
         )}
 
+        {/* STEP 4 */}
         {step === 4 && (
           <div style={styles.card}>
             <div style={styles.label}>💍 결혼 여부</div>
+
             <div style={styles.radioGroup}>
               <RadioOption
                 label="기혼"
@@ -495,6 +345,7 @@ const InitFortunePage = () => {
                 checked={additionalData.isMarried === "Y"}
                 onChange={handleAdditionalChange}
               />
+
               <RadioOption
                 label="미혼"
                 name="isMarried"
@@ -506,9 +357,11 @@ const InitFortunePage = () => {
           </div>
         )}
 
+        {/* STEP 5 */}
         {step === 5 && additionalData.isMarried === "N" && (
           <div style={styles.card}>
             <div style={styles.label}>💖 연애 여부</div>
+
             <div style={styles.radioGroup}>
               <RadioOption
                 label="연애 중"
@@ -528,9 +381,10 @@ const InitFortunePage = () => {
           </div>
         )}
 
+        {/* STEP 6 — 최종 확인 */}
         {step === 6 && (
-          <div style={{ ...styles.card, borderColor: "#f39c12" }}>
-            <div style={{ ...styles.label, color: "#e67e22" }}>최종 확인</div>
+          <div style={{ ...styles.card, borderColor: "#FEE500" }}>
+            <div style={{ ...styles.label, color: "#111" }}>최종 확인</div>
 
             {reviewData.map((i, idx) => (
               <div key={idx} style={{ marginBottom: "10px" }}>
@@ -540,10 +394,8 @@ const InitFortunePage = () => {
 
             {isSubmitting ? (
               <>
-                <p style={styles.loadingText}>🔥 분석 중...</p>
-                <div style={styles.loadingBar}>
-                  <div style={styles.loadingFill}></div>
-                </div>
+                <p style={styles.loadingText}>분석 중입니다...</p>
+                <InlineSpinner />
               </>
             ) : (
               <button type="submit" style={styles.submitButton}>
@@ -555,6 +407,7 @@ const InitFortunePage = () => {
 
         {error && <div style={styles.error}>⚠️ {error}</div>}
 
+        {/* Buttons */}
         <div style={styles.buttonRow}>
           {step > 1 && step < 6 && (
             <button
@@ -589,6 +442,174 @@ const InitFortunePage = () => {
       </form>
     </div>
   );
+};
+
+// =========================
+// 버튼 / 스타일 정의
+// =========================
+const RadioOption = ({ name, value, checked, label, onChange }) => (
+  <label
+    style={{
+      padding: "14px 20px",
+      borderRadius: "10px",
+      border: checked ? "2px solid #FEE500" : "2px solid #ddd",
+      background: checked ? "#FFF9C4" : "#fff",
+      fontWeight: "700",
+      cursor: "pointer",
+      transition: "0.25s",
+      boxShadow: checked ? "0 2px 8px rgba(0,0,0,0.08)" : "none",
+    }}
+  >
+    <input
+      type="radio"
+      name={name}
+      value={value}
+      checked={checked}
+      onChange={onChange}
+      style={{ display: "none" }}
+    />
+    {label}
+  </label>
+);
+
+const styles = {
+  page: {
+    maxWidth: "600px",
+    margin: "50px auto",
+    padding: "35px",
+    borderRadius: "25px",
+    background: "#fff",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
+    border: "1px solid #eee",
+    fontFamily: "'Inter', sans-serif",
+  },
+
+  title: {
+    textAlign: "center",
+    fontSize: "30px",
+    fontWeight: "900",
+    color: "#111",
+    marginBottom: "8px",
+  },
+
+  subtitle: {
+    textAlign: "center",
+    fontSize: "15px",
+    color: "#666",
+    marginBottom: "35px",
+  },
+
+  progressContainer: {
+    marginBottom: "35px",
+  },
+
+  progressBar: {
+    height: "6px",
+    background: "#eee",
+    borderRadius: "4px",
+  },
+
+  progressFill: {
+    height: "100%",
+    background: "#FEE500",
+    transition: "0.4s",
+    borderRadius: "4px",
+  },
+
+  card: {
+    borderRadius: "20px",
+    padding: "28px",
+    background: "#fff",
+    border: "1px solid #e6e6e6",
+    boxShadow: "0 4px 14px rgba(0,0,0,0.05)",
+    minHeight: "200px",
+  },
+
+  label: {
+    fontSize: "18px",
+    fontWeight: "800",
+    color: "#222",
+    marginBottom: "20px",
+  },
+
+  select: {
+    width: "100%",
+    padding: "14px",
+    borderRadius: "10px",
+    border: "1px solid #ccc",
+    fontSize: "16px",
+    background: "#fff",
+  },
+
+  input: {
+    width: "100%",
+    padding: "14px",
+    borderRadius: "10px",
+    border: "1px solid #ccc",
+    fontSize: "16px",
+    background: "#fff",
+  },
+
+  dateRow: {
+    display: "flex",
+    gap: "12px",
+  },
+
+  radioGroup: {
+    display: "flex",
+    gap: "15px",
+  },
+
+  error: {
+    marginTop: "18px",
+    padding: "12px",
+    borderRadius: "10px",
+    background: "#FFF2F0",
+    color: "#D32F2F",
+    border: "1px solid #FFCDD2",
+    textAlign: "center",
+    fontWeight: "700",
+  },
+
+  buttonRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "12px",
+    marginTop: "25px",
+  },
+
+  btn: (primary) => ({
+    flex: 1,
+    padding: "15px",
+    borderRadius: "10px",
+    border: primary ? "none" : "1px solid #ddd",
+    background: primary ? "#FEE500" : "#f2f2f2",
+    color: primary ? "#000" : "#555",
+    fontWeight: "800",
+    cursor: "pointer",
+    transition: "0.3s",
+  }),
+
+  submitButton: {
+    marginTop: "20px",
+    width: "100%",
+    padding: "16px",
+    borderRadius: "10px",
+    border: "none",
+    background: "#FEE500",
+    color: "#000",
+    fontSize: "20px",
+    fontWeight: "800",
+    cursor: "pointer",
+  },
+
+  loadingText: {
+    marginTop: "15px",
+    fontSize: "17px",
+    fontWeight: "700",
+    color: "#444",
+    textAlign: "center",
+  },
 };
 
 export default InitFortunePage;

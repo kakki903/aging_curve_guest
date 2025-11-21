@@ -4,40 +4,64 @@ import Head from "next/head";
 import Script from "next/script";
 import { get } from "../../utils/api";
 
-const COLORS = {
-  personality: "#4A90E2",
-  relationship: "#FF6FA1",
-  wealth: "#F4B400",
-  summaryGradient: "linear-gradient(135deg, #8e44ad, #9b59b6, #b57ee2)",
+/* =========================================
+   🎨 Kakao 공식 스타일 컬러 시스템
+========================================= */
+const KAKAO = {
+  yellow: "#FEE500",
+  black: "#000000",
+  gray1: "#111111",
+  gray3: "#555555",
+  gray5: "#999999",
+  border: "#e5e5e5",
+  bg: "#fafafa",
 };
 
-const AnalysisSection = ({
-  title,
-  icon,
-  children,
-  colorTheme,
-  initialOpen = false,
-}) => {
+/* =========================================
+   🎨 안전한 다크 그라디언트 리스트
+========================================= */
+const GRADIENTS = [
+  "linear-gradient(135deg, #2b5876, #4e4376)",
+  "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
+  "linear-gradient(135deg, #373b44, #4286f4)",
+  "linear-gradient(135deg, #1f4037, #99f2c8)",
+  "linear-gradient(135deg, #141e30, #243b55)",
+  "linear-gradient(135deg, #232526, #414345)",
+  "linear-gradient(135deg, #3a1c71, #d76d77, #ffaf7b)",
+];
+
+/* =========================================
+   📌 텍스트 자동 포맷팅
+========================================= */
+const formatText = (t) => {
+  if (!t) return "";
+  let f = t.replace(/\n+/g, " ");
+  f = f.replace(/\.(?!\s*$)/g, ".\n");
+  f = f.replace(/\n\s+/g, "\n");
+  return f;
+};
+
+/* =========================================
+   📌 토글 섹션
+========================================= */
+const Section = ({ title, icon, children, initialOpen, color }) => {
   const [open, setOpen] = useState(initialOpen);
 
   return (
-    <div
-      style={{ ...styles.sectionCard, borderLeft: `6px solid ${colorTheme}` }}
-    >
-      <div
-        style={{ ...styles.sectionHeader, color: colorTheme }}
-        onClick={() => setOpen(!open)}
-      >
-        <h3 style={{ ...styles.sectionTitle, color: colorTheme }}>
+    <div style={styles.sectionCard}>
+      <div style={{ ...styles.sectionHeader }} onClick={() => setOpen(!open)}>
+        <h3 style={styles.sectionTitle}>
           <span style={styles.icon}>{icon}</span> {title}
         </h3>
-        <span style={{ ...styles.toggleIcon, color: colorTheme }}>
-          {open ? "▼" : "▶"}
-        </span>
+
+        <span style={{ ...styles.toggleIcon, color }}>{open ? "−" : "+"}</span>
       </div>
 
       <div
-        style={{ ...styles.sectionContent, maxHeight: open ? "2000px" : "0" }}
+        style={{
+          ...styles.sectionContent,
+          maxHeight: open ? "2000px" : "0",
+        }}
       >
         <div style={styles.sectionContentInner}>{children}</div>
       </div>
@@ -45,16 +69,41 @@ const AnalysisSection = ({
   );
 };
 
-const FortuneResultPage = () => {
+/* =========================================
+   📌 디테일 아이템
+========================================= */
+const DetailItem = ({ title, content }) => {
+  if (!content) return null;
+  return (
+    <div style={styles.detailItem}>
+      <p style={styles.detailLabel}>
+        <span style={styles.listDot}>●</span> <strong>{title}</strong>
+      </p>
+      <p style={styles.detailContent}>{formatText(content)}</p>
+    </div>
+  );
+};
+
+/* =========================================
+   📌 메인 컴포넌트
+========================================= */
+const ResultPage = () => {
   const router = useRouter();
   const { resultId } = router.query;
 
   const [fortuneData, setFortuneData] = useState(null);
   const [inputData, setInputData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [shareUrl, setShareUrl] = useState("");
+  const [error, setError] = useState("");
 
+  /* 랜덤 배경 */
+  const [bg, setBg] = useState(null);
+  useEffect(() => {
+    setBg(GRADIENTS[Math.floor(Math.random() * GRADIENTS.length)]);
+  }, []);
+
+  /* 데이터 로드 */
   useEffect(() => {
     if (!resultId) return;
 
@@ -67,8 +116,8 @@ const FortuneResultPage = () => {
 
         setFortuneData(api.data);
         setInputData(api.inputdata);
-      } catch (err) {
-        setError(err.message);
+      } catch (e) {
+        setError(e.message);
       } finally {
         setLoading(false);
       }
@@ -77,15 +126,17 @@ const FortuneResultPage = () => {
     load();
   }, [resultId]);
 
+  /* 카카오 init */
   const initKakao = () => {
     if (window.Kakao && !window.Kakao.isInitialized()) {
       window.Kakao.init(process.env.NEXT_PUBLIC_KAKAO_JS_KEY);
     }
   };
 
+  /* 공유 */
   const handleCopy = () => {
     navigator.clipboard.writeText(shareUrl);
-    alert("📎 링크가 복사되었습니다!");
+    alert("📎 링크 복사 완료!");
   };
 
   const handleKakaoShare = () => {
@@ -94,43 +145,42 @@ const FortuneResultPage = () => {
     window.Kakao.Share.sendDefault({
       objectType: "feed",
       content: {
-        title: "사주 분석 결과",
-        description: "당신의 사주 분석 결과를 확인해보세요!",
+        title: "스토리텔링 사주 결과",
+        description: "전문적인 스토리텔링 사주를 확인하세요",
         imageUrl: "https://your-image-url.com/share-thumb.png",
         link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
       },
       buttons: [
         {
-          title: "결과 보러가기",
+          title: "결과 보기",
           link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
         },
       ],
     });
   };
 
+  /* 로딩 화면 */
   if (loading) {
     return (
       <div style={styles.container}>
-        <div style={styles.loadingBox}>
-          <p style={styles.loadingText}>🔮 분석 중입니다...</p>
-          <div style={styles.loadingBarContainer}>
-            <div style={styles.loadingBarFill}></div>
+        <div style={styles.loadingCard}>
+          <p style={styles.loadingText}>🔍 분석 중입니다...</p>
+          <div style={styles.loadingBar}>
+            <div style={styles.loadingFill}></div>
           </div>
         </div>
       </div>
     );
   }
 
+  /* 에러 */
   if (error || !fortuneData || !inputData) {
     return (
       <div style={styles.container}>
-        <h2 style={{ ...styles.title, color: "#e74c3c" }}>❌ 분석 오류</h2>
+        <h2 style={{ ...styles.title, color: "#d63031" }}>⚠ 오류 발생</h2>
         <p style={styles.subtitle}>{error}</p>
-        <button
-          style={styles.newAnalysisButton}
-          onClick={() => router.push("/init")}
-        >
-          다시 분석하기
+        <button style={styles.mainBtn} onClick={() => router.push("/init")}>
+          ↩ 돌아가기
         </button>
       </div>
     );
@@ -143,29 +193,20 @@ const FortuneResultPage = () => {
     wealth_and_career,
   } = fortuneData;
 
-  const DetailSection = ({ title, content }) => (
-    <div style={styles.detailItem}>
-      <p style={styles.detailLabel}>
-        <span style={styles.listDot}>●</span> <strong>{title}</strong>
-      </p>
-      <p style={styles.detailContent}>{content}</p>
-    </div>
-  );
-
   return (
     <div style={styles.container}>
       <Head>
         <title>AI 사주 분석 결과</title>
       </Head>
 
-      {/* Kakao Script */}
+      {/* Kakao */}
       <Script
         src="https://t1.kakaocdn.net/kakao_js_sdk/2.5.0/kakao.min.js"
         strategy="afterInteractive"
         onLoad={initKakao}
       />
 
-      {/* AdSense Script */}
+      {/* AdSense */}
       <Script
         id="adsense-init"
         strategy="afterInteractive"
@@ -173,18 +214,25 @@ const FortuneResultPage = () => {
         crossOrigin="anonymous"
       />
 
-      <h1 style={styles.title}>🌌 AI 운세 분석 결과</h1>
-
+      {/* 타이틀 */}
+      <h1 style={styles.title}>🔮 스토리텔링 사주 결과</h1>
       <p style={styles.subtitle}>
         출생일: {inputData.birth} | 성별:{" "}
         {inputData.gender === "M" ? "남자" : "여자"}
       </p>
 
-      {/* 광고 1 — 제목 아래 */}
-      <div style={{ margin: "10px 0 25px 0", textAlign: "center" }}>
+      {/* 메인 카드 */}
+      <div style={{ ...styles.mainCard, background: bg }}>
+        <h2 style={styles.mainTheme}>{analysis_summary.theme}</h2>
+        <div style={styles.divider}></div>
+        <p style={styles.mainAdvice}>{formatText(analysis_summary.advice)}</p>
+      </div>
+
+      {/* 광고 */}
+      <div style={styles.adWrap}>
         <ins
           className="adsbygoogle"
-          style={{ display: "block", textAlign: "center" }}
+          style={{ display: "block" }}
           data-ad-client="YOUR_ADSENSE_CLIENT_ID"
           data-ad-slot="YOUR_AD_SLOT_ID_TOP"
           data-ad-format="auto"
@@ -195,75 +243,71 @@ const FortuneResultPage = () => {
         </Script>
       </div>
 
-      <div style={styles.mainCard}>
-        <h2 style={styles.mainTitle}>✨ {analysis_summary.theme}</h2>
-        <div style={styles.divider}></div>
-        <p style={styles.mainAdvice}>{analysis_summary.advice}</p>
-      </div>
-
-      <div style={styles.resultGrid}>
-        {/* Sections */}
-        <AnalysisSection
+      {/* 본문 */}
+      <div style={styles.sectionWrap}>
+        <Section
           title="타고난 성격 및 적성"
           icon="👤"
-          colorTheme={COLORS.personality}
+          color="#4A90E2"
           initialOpen={true}
         >
-          <DetailSection
+          <DetailItem
             title="핵심 기질"
             content={personality_and_aptitude.core_trait}
           />
-          <DetailSection
+          <DetailItem
             title="강점"
             content={personality_and_aptitude.strength}
           />
-          <DetailSection
+          <DetailItem
             title="주의점"
             content={personality_and_aptitude.weakness}
           />
-        </AnalysisSection>
+        </Section>
 
-        <AnalysisSection
+        <Section
           title="애정 및 대인관계"
           icon="💖"
-          colorTheme={COLORS.relationship}
+          color="#FF6FA1"
+          initialOpen={false}
         >
-          <DetailSection
+          <DetailItem
             title="연애 스타일"
             content={relationship_and_family.love_style}
           />
-          <DetailSection
-            title="최적의 인연"
+          <DetailItem
+            title="최적 인연"
             content={relationship_and_family.partner_affinity}
           />
-          <DetailSection
+          <DetailItem
             title="사회적 패턴"
             content={relationship_and_family.social_pattern}
           />
-        </AnalysisSection>
+        </Section>
 
-        <AnalysisSection
+        <Section
           title="재물운 및 성공 전략"
           icon="💰"
-          colorTheme={COLORS.wealth}
+          color="#F4B400"
+          initialOpen={false}
         >
-          <DetailSection
+          <DetailItem
             title="재복의 성질"
             content={wealth_and_career.wealth_type}
           />
-          <DetailSection
+          <DetailItem
             title="추천 직업"
             content={wealth_and_career.best_career}
           />
-          <DetailSection
+          <DetailItem
             title="재물 조언"
             content={wealth_and_career.financial_advice}
           />
-        </AnalysisSection>
+        </Section>
       </div>
 
-      {/* 광고 2 — 페이지 하단 */}
-      <div style={{ margin: "40px 0 20px 0", textAlign: "center" }}>
+      {/* 광고 2 */}
+      <div style={{ margin: "40px 0 20px 0" }}>
         <ins
           className="adsbygoogle"
           style={{ display: "block" }}
@@ -277,231 +321,225 @@ const FortuneResultPage = () => {
         </Script>
       </div>
 
-      <div style={styles.footerSection}>
-        <div style={styles.shareBox}>
-          <button style={styles.copyButton} onClick={handleCopy}>
-            링크 복사
-          </button>
-
-          <button style={styles.kakaoButton} onClick={handleKakaoShare}>
-            카카오톡 공유
-          </button>
-
-          <button
-            style={styles.newAnalysisButton}
-            onClick={() => router.push("/init")}
-          >
-            메인
-          </button>
-        </div>
+      {/* footer 버튼 */}
+      <div style={styles.footer}>
+        <button style={styles.grayBtn} onClick={handleCopy}>
+          📎 링크 복사
+        </button>
+        <button style={styles.kakaoBtn} onClick={handleKakaoShare}>
+          💬 카카오톡 공유
+        </button>
+        <button style={styles.blackBtn} onClick={() => router.push("/init")}>
+          🏠 메인
+        </button>
       </div>
     </div>
   );
 };
 
+/* =========================================
+   📌 스타일
+========================================= */
 const styles = {
   container: {
     maxWidth: "850px",
     margin: "40px auto",
-    padding: "30px",
-    borderRadius: "25px",
-    backgroundColor: "#ffffff",
-    boxShadow: "0 15px 40px rgba(78, 56, 178, 0.15)",
-    border: "1px solid #eee",
-    fontFamily: "'Inter', sans-serif",
+    padding: "25px",
+    borderRadius: "20px",
+    background: "#fff",
+    border: `1px solid ${KAKAO.border}`,
+    boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+    fontFamily: "'Pretendard', sans-serif",
   },
 
   title: {
     textAlign: "center",
-    color: "#4a4e69",
-    fontSize: "32px",
+    fontSize: "30px",
     fontWeight: "900",
+    color: KAKAO.gray1,
   },
 
   subtitle: {
     textAlign: "center",
-    color: "#8d99ae",
-    fontSize: "16px",
-    marginBottom: "35px",
-    paddingBottom: "20px",
-    borderBottom: "1px solid #e0e0e0",
+    fontSize: "14px",
+    marginBottom: "25px",
+    color: KAKAO.gray5,
   },
 
+  /* 메인 카드 */
   mainCard: {
     padding: "35px",
     borderRadius: "20px",
-    background: COLORS.summaryGradient,
     color: "white",
     textAlign: "center",
     marginBottom: "40px",
-    boxShadow: "0 12px 25px rgba(155, 89, 182, 0.35)",
+    boxShadow: "0 15px 35px rgba(0,0,0,0.20)",
   },
 
-  mainTitle: {
-    fontSize: "26px",
+  mainTheme: {
+    fontSize: "24px",
     fontWeight: "900",
   },
 
   divider: {
-    width: "60px",
-    height: "4px",
-    background: "#fff",
-    margin: "10px auto",
+    width: "50px",
+    height: "3px",
+    background: "rgba(255,255,255,0.9)",
+    margin: "12px auto",
     borderRadius: "2px",
   },
 
   mainAdvice: {
-    fontSize: "18px",
-    lineHeight: 1.8,
+    fontSize: "17px",
+    lineHeight: 1.7,
+    whiteSpace: "pre-wrap",
   },
 
-  resultGrid: {
+  /* 섹션 */
+  sectionWrap: {
     display: "flex",
     flexDirection: "column",
     gap: "25px",
   },
 
   sectionCard: {
-    background: "#fafafa",
-    borderRadius: "16px",
-    border: "1px solid #ddd",
-    boxShadow: "0 8px 20px rgba(0,0,0,0.05)",
+    background: "#fff",
+    borderRadius: "20px",
+    border: `1px solid ${KAKAO.border}`,
+    overflow: "hidden",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
   },
 
   sectionHeader: {
-    padding: "20px 25px",
+    padding: "18px 24px",
     cursor: "pointer",
     background: "#fff",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    fontWeight: "800",
+    borderBottom: `1px solid ${KAKAO.border}`,
   },
 
   sectionTitle: {
     margin: 0,
-    fontSize: "20px",
+    fontSize: "18px",
+    fontWeight: "700",
+    color: KAKAO.gray1,
     display: "flex",
     alignItems: "center",
   },
 
-  icon: {
-    fontSize: "24px",
-    marginRight: "10px",
-  },
+  icon: { fontSize: "22px", marginRight: "10px" },
 
   toggleIcon: {
-    fontSize: "18px",
-    fontWeight: "bold",
+    fontSize: "22px",
+    fontWeight: "900",
   },
 
   sectionContent: {
     overflow: "hidden",
-    transition: "max-height 0.5s ease",
-    padding: "0 20px",
+    transition: "max-height 0.35s ease",
+    padding: "0 24px",
   },
 
   sectionContentInner: {
-    padding: "20px 0",
+    padding: "18px 0",
   },
 
+  /* Detail */
   detailItem: {
-    padding: "16px",
-    background: "#fff",
-    borderRadius: "12px",
-    marginBottom: "15px",
-    borderLeft: "4px solid #bbb",
-    boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+    padding: "18px",
+    background: "#fafafa",
+    borderRadius: "16px",
+    marginBottom: "14px",
+    borderLeft: "4px solid #ddd",
   },
 
   detailLabel: {
-    fontSize: "17px",
-    fontWeight: "800",
-    marginBottom: "8px",
+    fontSize: "15px",
+    fontWeight: "700",
+    marginBottom: "6px",
+    color: KAKAO.gray1,
   },
 
   listDot: {
-    color: "#6a0dad",
-    marginRight: "8px",
+    color: KAKAO.yellow,
+    marginRight: "6px",
   },
 
   detailContent: {
     whiteSpace: "pre-wrap",
     lineHeight: 1.7,
-    color: "#444",
+    color: "#333",
+    fontSize: "15px",
   },
 
-  footerSection: {
+  /* Footer Button Area */
+  footer: {
     marginTop: "40px",
-    paddingTop: "20px",
-    borderTop: "1px solid #eee",
-    textAlign: "center",
-  },
-
-  shareBox: {
     display: "flex",
     justifyContent: "center",
     gap: "10px",
   },
 
-  copyButton: {
-    padding: "12px 18px",
-    background: "#6a0dad",
-    color: "white",
-    borderRadius: "10px",
-    border: "none",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-
-  kakaoButton: {
-    padding: "12px 18px",
-    background: "#FEE500",
-    color: "#1b1b1b",
-    borderRadius: "10px",
-    border: "none",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-
-  newAnalysisButton: {
-    padding: "12px 25px",
-    background: "linear-gradient(45deg, #2ecc71, #27ae60)",
-    color: "white",
+  grayBtn: {
+    padding: "12px 20px",
     borderRadius: "12px",
+    background: "#f0f0f0",
+    color: "#333",
     border: "none",
     fontWeight: "700",
     cursor: "pointer",
   },
 
-  loadingBox: {
-    textAlign: "center",
-    padding: "50px",
-    background: "#fff8f5",
+  blackBtn: {
+    padding: "12px 20px",
+    borderRadius: "12px",
+    background: "#212121",
+    color: "#fff",
+    border: "none",
+    fontWeight: "700",
+    cursor: "pointer",
+  },
+
+  kakaoBtn: {
+    padding: "12px 20px",
+    background: KAKAO.yellow,
+    borderRadius: "12px",
+    border: "none",
+    fontWeight: "700",
+    cursor: "pointer",
+    color: "#000",
+  },
+
+  /* Loading */
+  loadingCard: {
+    padding: "40px",
+    background: "#fff",
     borderRadius: "15px",
-    border: "2px solid #e67e22",
+    border: "1px solid #eee",
+    textAlign: "center",
   },
 
   loadingText: {
-    color: "#e67e22",
-    fontSize: "20px",
-    fontWeight: "bold",
-    marginBottom: "20px",
+    fontSize: "18px",
+    fontWeight: "700",
+    marginBottom: "15px",
   },
 
-  loadingBarContainer: {
+  loadingBar: {
     width: "80%",
-    height: "15px",
-    background: "#fbe9e7",
+    height: "10px",
+    background: "#eee",
     margin: "0 auto",
-    borderRadius: "8px",
+    borderRadius: "5px",
   },
 
-  loadingBarFill: {
+  loadingFill: {
     width: "100%",
     height: "100%",
-    background: "#e67e22",
+    background: KAKAO.yellow,
   },
 };
 
-export default FortuneResultPage;
+export default ResultPage;

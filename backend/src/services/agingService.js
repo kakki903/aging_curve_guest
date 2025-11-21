@@ -1,5 +1,5 @@
 // ========================
-// agingService.js (롱폼 + 안정판)
+// agingService.js (최종 안정 버전)
 // ========================
 const agingRepository = require("../repositories/agingRepository");
 const resultRepository = require("../repositories/resultRepository");
@@ -10,127 +10,113 @@ const openai = new OpenAI({
   apiKey: process.env.OPEN_AI_KEY_QA,
 });
 
-// 장문 생성용 메인 모델 → 부족하면 mini로 fallback
-const MODEL_LONG = "gpt-4o";
-const MODEL_FALLBACK = "gpt-4o-mini";
+// gpt-4o-mini 단일 모델
+const MODEL = "gpt-4o-mini";
 
-// ====================================
-// JSON 스키마 (기존 유지)
-// ====================================
-const analysisSchema = {
-  type: "object",
-  properties: {
-    analysis_summary: {
-      type: "object",
-      properties: {
-        theme: { type: "string" },
-        advice: { type: "string" },
-      },
-      required: ["theme", "advice"],
-    },
-    personality_and_aptitude: {
-      type: "object",
-      properties: {
-        core_trait: { type: "string" },
-        strength: { type: "string" },
-        weakness: { type: "string" },
-      },
-      required: ["core_trait", "strength", "weakness"],
-    },
-    relationship_and_family: {
-      type: "object",
-      properties: {
-        love_style: { type: "string" },
-        partner_affinity: { type: "string" },
-        social_pattern: { type: "string" },
-      },
-      required: ["love_style", "partner_affinity", "social_pattern"],
-    },
-    wealth_and_career: {
-      type: "object",
-      properties: {
-        wealth_type: { type: "string" },
-        best_career: { type: "string" },
-        financial_advice: { type: "string" },
-      },
-      required: ["wealth_type", "best_career", "financial_advice"],
-    },
+// JSON 템플릿 - GPT가 절대 구조를 깨뜨릴 수 없음
+const JSON_TEMPLATE = `
+{
+  "analysis_summary": {
+    "theme": "<<THEME>>",
+    "advice": "<<ADVICE>>"
   },
-  required: [
-    "analysis_summary",
-    "personality_and_aptitude",
-    "relationship_and_family",
-    "wealth_and_career",
-  ],
-};
+  "personality_and_aptitude": {
+    "core_trait": "<<CORE_TRAIT>>",
+    "strength": "<<STRENGTH>>",
+    "weakness": "<<WEAKNESS>>"
+  },
+  "relationship_and_family": {
+    "love_style": "<<LOVE_STYLE>>",
+    "partner_affinity": "<<PARTNER_AFFINITY>>",
+    "social_pattern": "<<SOCIAL_PATTERN>>"
+  },
+  "wealth_and_career": {
+    "wealth_type": "<<WEALTH_TYPE>>",
+    "best_career": "<<BEST_CAREER>>",
+    "financial_advice": "<<FINANCIAL_ADVICE>>"
+  }
+}
+`;
 
-// ====================================
-// 서비스 객체
-// ====================================
 const agingService = {
   calculateKoreanAge: (birth) => {
     const year = new Date(birth).getFullYear();
     return new Date().getFullYear() - year + 1;
   },
 
-  // 장문 생성 프롬프트
-  createPrompt: (birth, gender, isMarried, isDating) => {
+  // 프롬프트 생성: theme/advice 짧게, 나머지는 길게
+  createSectionPrompt: (birth, gender, isMarried, isDating) => {
     const age = agingService.calculateKoreanAge(birth);
 
     return `
-당신은 전문 스토리텔러 역술가입니다.
-각 항목을 **최소 8~12문장 이상으로 길고 풍부하게** 작성해야 합니다.
-짧은 한두 문장 답변은 절대 허용되지 않습니다.
+너는 스토리텔링 사주 작가이다.
+받은 사용자 정보를 기반으로 적극적으로 재밌게 운세를 작성한다.
+
+각 항목 생성 규칙:
+- THEME: 전체 내용을 1줄로 요약하여 어떤 사람이라고 명시 ( 예시 - 서촌에 흩날리는 은행잎 같은 사람 )
+- ADVICE: 2~3줄 조언
+- 나머지 항목(CORE_TRAIT, STRENGTH, WEAKNESS, LOVE_STYLE, PARTNER_AFFINITY, SOCIAL_PATTERN, WEALTH_TYPE, BEST_CAREER, FINANCIAL_ADVICE)은 모두 10~12문장 장문
+- 이야기 하듯 내용을 적어주고 과한 유머도 가능해
+- 문자열 내부에서 따옴표("), 특수 따옴표(“, ”, ‘, ’) 금지
+- 인용문 금지
+- 코드블록 금지
+- 각 항목 블록 마지막에 반드시 개행(\\n)을 넣어라 (중요)
+
+출력 형식:
+
+THEME:
+[1줄]
+
+ADVICE:
+[3~4줄]
+
+CORE_TRAIT:
+[10~12문장]
+
+STRENGTH:
+[10~12문장]
+
+WEAKNESS:
+[10~12문장]
+
+LOVE_STYLE:
+[10~12문장]
+
+PARTNER_AFFINITY:
+[10~12문장]
+
+SOCIAL_PATTERN:
+[10~12문장]
+
+WEALTH_TYPE:
+[10~12문장]
+
+BEST_CAREER:
+[10~12문장]
+
+FINANCIAL_ADVICE:
+[10~12문장]
 
 사용자 정보:
 - 생년월일: ${birth}
-- 한국나이: ${age}세
+- 한국 나이: ${age}세
 - 성별: ${gender === "M" ? "남자" : "여자"}
 - 결혼 여부: ${isMarried === "Y" ? "기혼" : "미혼"}
 ${isMarried === "N" ? (isDating === "Y" ? "- 연애 중" : "- 솔로") : ""}
-
-작성 항목 (각각 8~12문장 이상):
-
-[analysis_summary]
-theme, advice
-
-[personality_and_aptitude]
-core_trait, strength, weakness
-
-[relationship_and_family]
-love_style, partner_affinity, social_pattern
-
-[wealth_and_career]
-wealth_type, best_career, financial_advice
-
-절대 규칙:
-1) 각 항목은 8~12문장 이상
-2) 비유·장면 묘사 적극 사용
-3) 소설처럼 길게 작성
-4) 단문 금지
-    `;
+`;
   },
 
-  createJsonPrompt: (longText) => `
-다음 긴 분석 텍스트를 JSON 스키마에 맞게 변환해라.
-내용 삭제 금지. 재구성만 허용.
+  // 템플릿 삽입 함수
+  fillTemplate: (template, map) => {
+    let result = template;
+    for (const key in map) {
+      result = result.replace(`<<${key}>>`, map[key]);
+    }
+    return result;
+  },
 
-JSON 스키마:
-${JSON.stringify(analysisSchema, null, 2)}
-
-긴 텍스트:
-${longText}
-
-주의:
-- JSON만 출력
-- 코드블록(\`\`\`) 금지
-  `,
-
-  // ====================================
-  // init (2단계: 장문 → JSON 재구성)
-  // ====================================
   init: async (birth, gender, isMarried, isDating) => {
-    // 기존 분석 존재하면 DB에서 로드
+    // 기존 저장된 결과 확인
     const existId = await agingService.checkResultData(
       birth,
       gender,
@@ -143,81 +129,70 @@ ${longText}
       return { success: true, data: loaded, resultId: existId };
     }
 
-    // 1단계: 장문 생성
-    const prompt = agingService.createPrompt(
+    // 프롬프트 생성
+    const prompt = agingService.createSectionPrompt(
       birth,
       gender,
       isMarried,
       isDating
     );
 
-    let longResult;
+    // GPT 요청
+    const res = await openai.chat.completions.create({
+      model: MODEL,
+      messages: [
+        {
+          role: "system",
+          content:
+            "너는 감성적 운세 스토리텔링 작가이다. 반드시 포맷을 지켜서 출력한다.",
+        },
+        { role: "user", content: prompt },
+      ],
+      max_tokens: 9000,
+    });
 
-    try {
-      longResult = await openai.chat.completions.create({
-        model: MODEL_LONG,
-        messages: [
-          {
-            role: "system",
-            content:
-              "너는 장문 스토리텔링 역술가이다. 각 항목을 최소 8~12문장 이상으로 생성하라.",
-          },
-          { role: "user", content: prompt },
-        ],
-      });
-    } catch (e) {
-      // 429 등 에러 시 fallback
-      console.log("⚠️ 4o 오류 → mini fallback 사용");
-      longResult = await openai.chat.completions.create({
-        model: MODEL_FALLBACK,
-        messages: [
-          { role: "system", content: "장문으로 작성하라." },
-          { role: "user", content: prompt },
-        ],
-      });
-    }
+    const raw = res.choices[0].message.content;
 
-    const longText = longResult.choices[0].message.content;
+    console.log("\n====== GPT RAW OUTPUT ======");
+    console.log(raw);
+    console.log("============================\n");
 
-    // 2단계: 긴 텍스트 → JSON 변환
-    const jsonPrompt = agingService.createJsonPrompt(longText);
+    // JSON 파싱용 키 목록
+    const keys = [
+      "THEME",
+      "ADVICE",
+      "CORE_TRAIT",
+      "STRENGTH",
+      "WEAKNESS",
+      "LOVE_STYLE",
+      "PARTNER_AFFINITY",
+      "SOCIAL_PATTERN",
+      "WEALTH_TYPE",
+      "BEST_CAREER",
+      "FINANCIAL_ADVICE",
+    ];
 
-    let jsonRaw;
-    try {
-      const jsonRes = await openai.chat.completions.create({
-        model: MODEL_LONG,
-        messages: [
-          {
-            role: "system",
-            content: "긴 텍스트를 JSON으로 변환하는 전문가이다.",
-          },
-          { role: "user", content: jsonPrompt },
-        ],
-      });
+    const sections = {};
 
-      jsonRaw = jsonRes.choices[0].message.content;
-    } catch (e) {
-      console.log("⚠️ JSON 변환 실패 → mini fallback");
-      const jsonRes = await openai.chat.completions.create({
-        model: MODEL_FALLBACK,
-        messages: [
-          {
-            role: "system",
-            content: "긴 텍스트를 JSON으로 변환하는 전문가이다.",
-          },
-          { role: "user", content: jsonPrompt },
-        ],
-      });
-      jsonRaw = jsonRes.choices[0].message.content;
-    }
+    // 마지막 블록까지 100% 잡는 정규식
+    keys.forEach((key) => {
+      const regex = new RegExp(`${key}:(.*?)(?=\\n[A-Z_]+:|$)`, "s");
+      const match = raw.match(regex);
+      sections[key] = match ? match[1].trim() : "";
+    });
 
-    // JSON 파싱을 위해 코드블록 제거
-    const cleaned = jsonRaw
-      .replace(/```json/g, "")
-      .replace(/```/g, "")
-      .trim();
+    // 템플릿에 삽입
+    let finalJsonStr = agingService.fillTemplate(JSON_TEMPLATE, sections);
 
-    const resultJson = JSON.parse(cleaned);
+    // 제어문자 제거 (JSON.parse 에러 0%)
+    const sanitized = finalJsonStr.replace(/[\u0000-\u0019]+/g, " ");
+
+    console.log("\n====== Sanitized JSON (Before Parse) ======");
+    console.log(sanitized);
+    console.log("===========================================\n");
+
+    // JSON 파싱
+    const finalObj = JSON.parse(sanitized);
 
     // DB 저장
     const saveId = await agingRepository.savePrediction(
@@ -225,10 +200,10 @@ ${longText}
       gender,
       isMarried,
       isDating,
-      resultJson
+      finalObj
     );
 
-    return { success: true, data: resultJson, resultId: saveId };
+    return { success: true, data: finalObj, resultId: saveId };
   },
 
   checkResultData: async (birth, gender, isMarried, isDating) => {
