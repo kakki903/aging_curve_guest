@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { useRouter } from "next/router";
 import { post } from "@/utils/api";
+import Script from "next/script";
 
 const InitFortunePage = () => {
   const router = useRouter();
@@ -88,7 +89,7 @@ const InitFortunePage = () => {
           canGo = false;
         }
         if (additionalData.isMarried === "Y" && canGo) {
-          setStep(6); // skip dating step
+          setStep(6);
           return;
         }
         break;
@@ -145,7 +146,7 @@ const InitFortunePage = () => {
   };
 
   // ------------------------------
-  // PROGRESS BAR WIDTH
+  // PROGRESS BAR
   // ------------------------------
   const progressWidth = useMemo(() => {
     const s = Math.min(step, MAX_STEP);
@@ -155,7 +156,7 @@ const InitFortunePage = () => {
   }, [step]);
 
   // ------------------------------
-  // STYLE (FortuneResultPage 맞춤)
+  // STYLE
   // ------------------------------
   const styles = {
     page: {
@@ -183,7 +184,6 @@ const InitFortunePage = () => {
       marginBottom: "35px",
     },
 
-    // Progress
     progressContainer: {
       position: "relative",
       marginBottom: "40px",
@@ -328,9 +328,6 @@ const InitFortunePage = () => {
     },
   };
 
-  // ------------------------------
-  // Radio Option Component
-  // ------------------------------
   const RadioOption = ({ name, value, checked, label, onChange }) => (
     <label style={styles.radio(checked)}>
       <input
@@ -345,9 +342,6 @@ const InitFortunePage = () => {
     </label>
   );
 
-  // ------------------------------
-  // Review Data
-  // ------------------------------
   const reviewData = useMemo(() => {
     return [
       { label: "생년월일", value: `${year}년 ${month}월 ${day}일` },
@@ -371,13 +365,39 @@ const InitFortunePage = () => {
     ];
   }, [year, month, day, additionalData]);
 
-  // ------------------------------
-  // RENDER
-  // ------------------------------
   return (
     <div style={styles.page}>
+      {/* AdSense Script */}
+      <Script
+        id="adsense-init"
+        strategy="afterInteractive"
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=YOUR_ADSENSE_CLIENT_ID"
+        crossOrigin="anonymous"
+        onLoad={() => {
+          try {
+            (window.adsbygoogle = window.adsbygoogle || []).push({});
+          } catch (e) {}
+        }}
+      />
+
       <h1 style={styles.title}>🔮 당신의 운명 분석</h1>
       <p style={styles.subtitle}>단계별로 정보를 입력해주세요.</p>
+
+      {/* 광고 위치 */}
+      <div style={{ margin: "20px 0" }}>
+        <ins
+          className="adsbygoogle"
+          style={{ display: "block", textAlign: "center" }}
+          data-ad-client="YOUR_ADSENSE_CLIENT_ID"
+          data-ad-slot="YOUR_AD_SLOT_ID"
+          data-ad-format="auto"
+          data-full-width-responsive="true"
+        ></ins>
+      </div>
+
+      <Script id="adsense-push" strategy="afterInteractive">
+        {`(adsbygoogle = window.adsbygoogle || []).push({});`}
+      </Script>
 
       {/* Progress */}
       <div style={styles.progressContainer}>
@@ -387,7 +407,6 @@ const InitFortunePage = () => {
       </div>
 
       <form onSubmit={handleSubmit}>
-        {/* STEP 1 */}
         {step === 1 && (
           <div style={styles.card}>
             <div style={styles.label}>🗓️ 생년월일</div>
@@ -430,7 +449,6 @@ const InitFortunePage = () => {
           </div>
         )}
 
-        {/* STEP 2 */}
         {step === 2 && (
           <div style={styles.card}>
             <div style={styles.label}>⏰ 태어난 시간</div>
@@ -444,7 +462,6 @@ const InitFortunePage = () => {
           </div>
         )}
 
-        {/* STEP 3 */}
         {step === 3 && (
           <div style={styles.card}>
             <div style={styles.label}>🚻 성별</div>
@@ -467,7 +484,6 @@ const InitFortunePage = () => {
           </div>
         )}
 
-        {/* STEP 4 */}
         {step === 4 && (
           <div style={styles.card}>
             <div style={styles.label}>💍 결혼 여부</div>
@@ -490,7 +506,6 @@ const InitFortunePage = () => {
           </div>
         )}
 
-        {/* STEP 5 */}
         {step === 5 && additionalData.isMarried === "N" && (
           <div style={styles.card}>
             <div style={styles.label}>💖 연애 여부</div>
@@ -513,7 +528,6 @@ const InitFortunePage = () => {
           </div>
         )}
 
-        {/* FINAL STEP */}
         {step === 6 && (
           <div style={{ ...styles.card, borderColor: "#f39c12" }}>
             <div style={{ ...styles.label, color: "#e67e22" }}>최종 확인</div>
@@ -539,10 +553,8 @@ const InitFortunePage = () => {
           </div>
         )}
 
-        {/* ERROR */}
         {error && <div style={styles.error}>⚠️ {error}</div>}
 
-        {/* BUTTONS */}
         <div style={styles.buttonRow}>
           {step > 1 && step < 6 && (
             <button
