@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import { useRouter } from "next/router";
 import { post } from "@/utils/api";
 import Script from "next/script";
+import Head from "next/head";
 
 // =========================
 // 🔄 인라인 스피너
@@ -210,6 +211,9 @@ const InitFortunePage = () => {
 
   return (
     <div style={styles.page}>
+      <Head>
+        <title>빨랑 - 사주</title>
+      </Head>
       {/* ADSENSE */}
       <Script
         id="adsense-init"
