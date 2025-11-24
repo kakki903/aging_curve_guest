@@ -75,7 +75,7 @@ const agingService = {
 각 항목 생성 규칙:
 - THEME: 전체 내용을 1줄로 요약하여 어떤 사람이라고 명시 ( 예시 - 서촌에 흩날리는 은행잎 같은 사람 )
 - ADVICE: 2~3줄 조언
-- 나머지 항목(CORE_TRAIT, STRENGTH, WEAKNESS, LOVE_STYLE, PARTNER_AFFINITY, SOCIAL_PATTERN, WEALTH_TYPE, BEST_CAREER, FINANCIAL_ADVICE)은 모두 1~2문장 장문
+- 나머지 항목(CORE_TRAIT, STRENGTH, WEAKNESS, LOVE_STYLE, PARTNER_AFFINITY, SOCIAL_PATTERN, WEALTH_TYPE, BEST_CAREER, FINANCIAL_ADVICE)은 모두 10~12문장 장문
 - 이야기 하듯 내용을 적어주고 과한 유머도 가능해
 - 문자열 내부에서 따옴표("), 특수 따옴표(“, ”, ‘, ’) 금지
 - 인용문 금지
@@ -91,31 +91,31 @@ ADVICE:
 [3~4줄]
 
 CORE_TRAIT:
-[1~2문장]
+[10~12문장]
 
 STRENGTH:
-[1~2문장]
+[10~12문장]
 
 WEAKNESS:
-[1~2문장]
+[10~12문장]
 
 LOVE_STYLE:
-[1~2문장]
+[10~12문장]
 
 PARTNER_AFFINITY:
-[1~2문장]
+[10~12문장]
 
 SOCIAL_PATTERN:
-[1~2문장]
+[10~12문장]
 
 WEALTH_TYPE:
-[1~2문장]
+[10~12문장]
 
 BEST_CAREER:
-[1~2문장]
+[10~12문장]
 
 FINANCIAL_ADVICE:
-[1~2문장]
+[10~12문장]
 
 사용자 정보:
 - 생년월일: ${birth}
