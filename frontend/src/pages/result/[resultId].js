@@ -327,7 +327,7 @@ const ResultPage = () => {
           📎 링크 복사
         </button>
         <button style={styles.kakaoBtn} onClick={handleKakaoShare}>
-          💬 카카오톡 공유
+          💬 카톡 공유
         </button>
         <button style={styles.blackBtn} onClick={() => router.push("/init")}>
           🏠 메인
