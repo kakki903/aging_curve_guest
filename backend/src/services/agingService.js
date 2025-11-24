@@ -6,9 +6,29 @@ const resultRepository = require("../repositories/resultRepository");
 const resultService = require("./resultService");
 const OpenAI = require("openai");
 
+let keyIndex = 0;
+
+const getKey = () => {
+  const keys = [
+    process.env.OPEN_AI_KEY_QA_1,
+    process.env.OPEN_AI_KEY_QA_2,
+    process.env.OPEN_AI_KEY_QA_3,
+    process.env.OPEN_AI_KEY_QA_4,
+    process.env.OPEN_AI_KEY_QA_5,
+  ];
+
+  const key = keys[keyIndex];
+  keyIndex = (keyIndex + 1) % keys.length;
+  return key;
+};
+
 const openai = new OpenAI({
-  apiKey: process.env.OPEN_AI_KEY_QA,
+  apiKey: getKey(),
 });
+
+// const openai = new OpenAI({
+//   apiKey: process.env.OPEN_AI_KEY_QA,
+// });
 
 // gpt-4o-mini 단일 모델
 const MODEL = "gpt-4o-mini";
