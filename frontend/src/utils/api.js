@@ -1,5 +1,5 @@
-const API_BASE_URL = "http://localhost:3000/api/v1";
-// const API_BASE_URL = "https://aging-curve-guest-backend.onrender.com/api/v1";
+// const API_BASE_URL = "http://localhost:3000/api/v1";
+const API_BASE_URL = "https://aging-curve-guest-backend.onrender.com/api/v1";
 
 /**
  * 기본 fetch 함수를 래핑하여 공통 로직을 처리하는 함수
