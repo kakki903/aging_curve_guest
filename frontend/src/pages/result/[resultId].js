@@ -2,11 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Script from "next/script";
-import { get } from "../../utils/api";
+import { get, post } from "../../utils/api";
 
-/* =========================================
-   🎨 Kakao 공식 스타일 컬러 시스템
-========================================= */
+/* Kakao 스타일 */
 const KAKAO = {
   yellow: "#FEE500",
   black: "#000000",
@@ -17,9 +15,7 @@ const KAKAO = {
   bg: "#fafafa",
 };
 
-/* =========================================
-   🎨 안전한 다크 그라디언트 리스트
-========================================= */
+/* 그라디언트 리스트 */
 const GRADIENTS = [
   "linear-gradient(135deg, #2b5876, #4e4376)",
   "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
@@ -30,9 +26,7 @@ const GRADIENTS = [
   "linear-gradient(135deg, #3a1c71, #d76d77, #ffaf7b)",
 ];
 
-/* =========================================
-   📌 텍스트 자동 포맷팅
-========================================= */
+/* 텍스트 포맷 */
 const formatText = (t) => {
   if (!t) return "";
   let f = t.replace(/\n+/g, " ");
@@ -41,19 +35,16 @@ const formatText = (t) => {
   return f;
 };
 
-/* =========================================
-   📌 토글 섹션
-========================================= */
+/* Section Component */
 const Section = ({ title, icon, children, initialOpen, color }) => {
   const [open, setOpen] = useState(initialOpen);
 
   return (
     <div style={styles.sectionCard}>
-      <div style={{ ...styles.sectionHeader }} onClick={() => setOpen(!open)}>
+      <div style={styles.sectionHeader} onClick={() => setOpen(!open)}>
         <h3 style={styles.sectionTitle}>
           <span style={styles.icon}>{icon}</span> {title}
         </h3>
-
         <span style={{ ...styles.toggleIcon, color }}>{open ? "−" : "+"}</span>
       </div>
 
@@ -69,9 +60,7 @@ const Section = ({ title, icon, children, initialOpen, color }) => {
   );
 };
 
-/* =========================================
-   📌 디테일 아이템
-========================================= */
+/* Detail Item */
 const DetailItem = ({ title, content }) => {
   if (!content) return null;
   return (
@@ -84,9 +73,6 @@ const DetailItem = ({ title, content }) => {
   );
 };
 
-/* =========================================
-   📌 메인 컴포넌트
-========================================= */
 const ResultPage = () => {
   const router = useRouter();
   const { resultId } = router.query;
@@ -94,10 +80,12 @@ const ResultPage = () => {
   const [fortuneData, setFortuneData] = useState(null);
   const [inputData, setInputData] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const [againLoading, setAgainLoading] = useState(false);
+
   const [shareUrl, setShareUrl] = useState("");
   const [error, setError] = useState("");
 
-  /* 랜덤 배경 */
   const [bg, setBg] = useState(null);
   useEffect(() => {
     setBg(GRADIENTS[Math.floor(Math.random() * GRADIENTS.length)]);
@@ -126,65 +114,120 @@ const ResultPage = () => {
     load();
   }, [resultId]);
 
-  /* 카카오 init */
-  const initKakao = () => {
-    if (window.Kakao && !window.Kakao.isInitialized()) {
-      window.Kakao.init(process.env.NEXT_PUBLIC_KAKAO_JS_KEY);
+  /* 오류 시 자동 이동 */
+  useEffect(() => {
+    if (!loading && (error || !fortuneData || !inputData)) {
+      router.replace("/init");
     }
-  };
+  }, [loading, error, fortuneData, inputData]);
 
-  /* 공유 */
-  const handleCopy = () => {
-    navigator.clipboard.writeText(shareUrl);
-    alert("📎 링크 복사 완료!");
-  };
+  if (error || !fortuneData || !inputData) return null;
 
-  const handleKakaoShare = () => {
-    if (!window.Kakao) return;
-
-    window.Kakao.Share.sendDefault({
-      objectType: "feed",
-      content: {
-        title: "스토리텔링 사주 결과",
-        description: "전문적인 스토리텔링 사주를 확인하세요",
-        imageUrl: "https://your-image-url.com/share-thumb.png",
-        link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
-      },
-      buttons: [
-        {
-          title: "결과 보기",
-          link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
-        },
-      ],
-    });
-  };
-
-  /* 로딩 화면 */
-  if (loading) {
+  /* 🔥 재요청 로딩 화면 */
+  if (againLoading) {
     return (
-      <div style={styles.container}>
-        <div style={styles.loadingCard}>
-          <p style={styles.loadingText}>🔍 분석 중입니다...</p>
-          <div style={styles.loadingBar}>
-            <div style={styles.loadingFill}></div>
+      <>
+        {/* 스피너 keyframes */}
+        <style jsx global>{`
+          @keyframes spin {
+            0% {
+              transform: rotate(0deg);
+            }
+            100% {
+              transform: rotate(360deg);
+            }
+          }
+        `}</style>
+
+        <div style={styles.loadingFull}>
+          <div style={styles.loadingCard}>
+            <p style={styles.loadingText}>사주를 확인하고 있습니다</p>
+
+            {/* 요청 정보 */}
+            <div style={styles.requestInfo}>
+              <strong>출생일:</strong> {inputData.birth}
+              <br />
+              <strong>성별:</strong>{" "}
+              {inputData.gender === "M" ? "남자" : "여자"}
+              <br />
+              <strong>결혼 여부:</strong>{" "}
+              {inputData.isMarried === "Y" ? "기혼" : "미혼"}
+              <br />
+              {inputData.isMarried === "N" && (
+                <>
+                  <strong>연애 여부:</strong>{" "}
+                  {inputData.isDating === "Y" ? "연애 중" : "솔로"}
+                  <br />
+                </>
+              )}
+            </div>
+
+            {/* 스피너 */}
+            <div style={styles.spinner}></div>
+
+            <p style={styles.loadingSub}>잠시만 기다려 주세요…</p>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
-  /* 에러 */
-  if (error || !fortuneData || !inputData) {
+  /* 기본 로딩 화면 */
+  if (loading) {
     return (
-      <div style={styles.container}>
-        <h2 style={{ ...styles.title, color: "#d63031" }}>⚠ 오류 발생</h2>
-        <p style={styles.subtitle}>{error}</p>
-        <button style={styles.mainBtn} onClick={() => router.push("/init")}>
-          ↩ 돌아가기
-        </button>
-      </div>
+      <>
+        <style jsx global>{`
+          @keyframes spin {
+            0% {
+              transform: rotate(0deg);
+            }
+            100% {
+              transform: rotate(360deg);
+            }
+          }
+        `}</style>
+
+        <div style={styles.container}>
+          <div style={styles.loadingCard}>
+            <p style={styles.loadingText}>🔍 분석 중입니다...</p>
+            <div style={styles.spinner}></div>
+          </div>
+        </div>
+      </>
     );
   }
+
+  /* 🔄 Again 요청 */
+  const handleAgain = async () => {
+    const confirmed = window.confirm("사주를 다시 요청하시겠습니까?");
+    if (!confirmed) return;
+
+    setAgainLoading(true);
+
+    try {
+      const payload = {
+        birthDate: inputData.birth.substring(0, 16),
+        gender: inputData.gender,
+        isMarried: inputData.isMarried,
+        ...(inputData.isMarried === "N" && {
+          isDating: inputData.isDating,
+        }),
+      };
+
+      const res = await post("/aging/reInit", payload);
+
+      console.log(res);
+
+      if (res.success) {
+        setAgainLoading(false);
+        router.push(`/result/${res.resultId}`);
+        return;
+      }
+    } catch (err) {
+      console.log("again error:", err);
+      setAgainLoading(false);
+    }
+  };
 
   const {
     analysis_summary,
@@ -194,151 +237,195 @@ const ResultPage = () => {
   } = fortuneData;
 
   return (
-    <div style={styles.container}>
-      <Head>
-        <title>AI 사주 분석 결과</title>
-      </Head>
+    <>
+      <style jsx global>{`
+        @keyframes spin {
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
 
-      {/* Kakao */}
-      <Script
-        src="https://t1.kakaocdn.net/kakao_js_sdk/2.5.0/kakao.min.js"
-        strategy="afterInteractive"
-        onLoad={initKakao}
-      />
+      <div style={styles.container}>
+        <Head>
+          <title>사주 분석 결과</title>
+        </Head>
 
-      {/* AdSense */}
-      <Script
-        id="adsense-init"
-        strategy="afterInteractive"
-        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5063634047102858"
-        crossOrigin="anonymous"
-      />
+        {/* 카카오 */}
+        <Script
+          src="https://t1.kakaocdn.net/kakao_js_sdk/2.5.0/kakao.min.js"
+          strategy="afterInteractive"
+          onLoad={() => {
+            if (window.Kakao && !window.Kakao.isInitialized()) {
+              window.Kakao.init(process.env.NEXT_PUBLIC_KAKAO_JS_KEY);
+            }
+          }}
+        />
 
-      {/* 타이틀 */}
-      <h1 style={styles.title}>🔮 스토리텔링 사주 결과</h1>
-      <p style={styles.subtitle}>
-        출생일: {inputData.birth} | 성별:{" "}
-        {inputData.gender === "M" ? "남자" : "여자"}
-      </p>
+        {/* 광고 */}
+        <Script
+          id="adsense-init"
+          strategy="afterInteractive"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5063634047102858"
+          crossOrigin="anonymous"
+        />
 
-      {/* 메인 카드 */}
-      <div style={{ ...styles.mainCard, background: bg }}>
-        <h2 style={styles.mainTheme}>{analysis_summary.theme}</h2>
-        <div style={styles.divider}></div>
-        <p style={styles.mainAdvice}>{formatText(analysis_summary.advice)}</p>
+        <h1 style={styles.title}>사주 결과</h1>
+        <p style={styles.subtitle}>
+          출생일: {inputData.birth} | 성별:{" "}
+          {inputData.gender === "M" ? "남자" : "여자"}
+        </p>
+
+        <div style={{ ...styles.mainCard, background: bg }}>
+          <h2 style={styles.mainTheme}>{analysis_summary.theme}</h2>
+          <div style={styles.divider}></div>
+          <p style={styles.mainAdvice}>{formatText(analysis_summary.advice)}</p>
+        </div>
+
+        {/* 광고 */}
+        <div style={styles.adWrap}>
+          <ins
+            className="adsbygoogle"
+            style={{ display: "block" }}
+            data-ad-client="ca-pub-5063634047102858"
+            data-ad-slot="2915246442"
+            data-ad-format="auto"
+            data-full-width-responsive="true"
+          ></ins>
+          <Script id="adsense-push-top" strategy="afterInteractive">
+            {`(adsbygoogle = window.adsbygoogle || []).push({});`}
+          </Script>
+        </div>
+
+        <div style={styles.sectionWrap}>
+          <Section
+            title="타고난 성격 및 적성"
+            icon="👤"
+            color="#4A90E2"
+            initialOpen={true}
+          >
+            <DetailItem
+              title="핵심 기질"
+              content={personality_and_aptitude.core_trait}
+            />
+            <DetailItem
+              title="강점"
+              content={personality_and_aptitude.strength}
+            />
+            <DetailItem
+              title="주의점"
+              content={personality_and_aptitude.weakness}
+            />
+          </Section>
+
+          <Section
+            title="애정 및 대인관계"
+            icon="💖"
+            color="#FF6FA1"
+            initialOpen={false}
+          >
+            <DetailItem
+              title="연애 스타일"
+              content={relationship_and_family.love_style}
+            />
+            <DetailItem
+              title="최적 인연"
+              content={relationship_and_family.partner_affinity}
+            />
+            <DetailItem
+              title="사회적 패턴"
+              content={relationship_and_family.social_pattern}
+            />
+          </Section>
+
+          <Section
+            title="재물운 및 성공 전략"
+            icon="💰"
+            color="#F4B400"
+            initialOpen={false}
+          >
+            <DetailItem
+              title="재복의 성질"
+              content={wealth_and_career.wealth_type}
+            />
+            <DetailItem
+              title="추천 직업"
+              content={wealth_and_career.best_career}
+            />
+            <DetailItem
+              title="재물 조언"
+              content={wealth_and_career.financial_advice}
+            />
+          </Section>
+        </div>
+
+        {/* 광고 */}
+        <div style={{ margin: "40px 0 20px 0" }}>
+          <ins
+            className="adsbygoogle"
+            style={{ display: "block" }}
+            data-ad-client="YOUR_ADSENSE_CLIENT_ID"
+            data-ad-slot="YOUR_AD_SLOT_ID_BOTTOM"
+            data-ad-format="auto"
+            data-full-width-responsive="true"
+          ></ins>
+          <Script id="adsense-push-bottom" strategy="afterInteractive">
+            {`(adsbygoogle = window.adsbygoogle || []).push({});`}
+          </Script>
+        </div>
+
+        {/* FOOTER */}
+        <div style={styles.footer}>
+          <button
+            style={styles.grayBtn}
+            onClick={() => navigator.clipboard.writeText(shareUrl)}
+          >
+            📎링크 복사
+          </button>
+
+          <button
+            style={styles.kakaoBtn}
+            onClick={() => {
+              if (window.Kakao) {
+                window.Kakao.Share.sendDefault({
+                  objectType: "feed",
+                  content: {
+                    title: "스토리텔링 사주 결과",
+                    description: "전문적인 스토리텔링 사주를 확인하세요",
+                    imageUrl: "https://your-image-url.com/share-thumb.png",
+                    link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
+                  },
+                  buttons: [
+                    {
+                      title: "결과 보기",
+                      link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
+                    },
+                  ],
+                });
+              }
+            }}
+          >
+            💬 카톡 공유
+          </button>
+
+          <button style={styles.blackBtn} onClick={() => router.push("/init")}>
+            🏠 메인으로
+          </button>
+
+          <button style={styles.grayBtn} onClick={handleAgain}>
+            🔄 사주 받기
+          </button>
+        </div>
       </div>
-
-      {/* 광고 */}
-      <div style={styles.adWrap}>
-        <ins
-          className="adsbygoogle"
-          style={{ display: "block" }}
-          data-ad-client="ca-pub-5063634047102858"
-          data-ad-slot="2915246442"
-          data-ad-format="auto"
-          data-full-width-responsive="true"
-        ></ins>
-        <Script id="adsense-push-top" strategy="afterInteractive">
-          {`(adsbygoogle = window.adsbygoogle || []).push({});`}
-        </Script>
-      </div>
-
-      {/* 본문 */}
-      <div style={styles.sectionWrap}>
-        <Section
-          title="타고난 성격 및 적성"
-          icon="👤"
-          color="#4A90E2"
-          initialOpen={true}
-        >
-          <DetailItem
-            title="핵심 기질"
-            content={personality_and_aptitude.core_trait}
-          />
-          <DetailItem
-            title="강점"
-            content={personality_and_aptitude.strength}
-          />
-          <DetailItem
-            title="주의점"
-            content={personality_and_aptitude.weakness}
-          />
-        </Section>
-
-        <Section
-          title="애정 및 대인관계"
-          icon="💖"
-          color="#FF6FA1"
-          initialOpen={false}
-        >
-          <DetailItem
-            title="연애 스타일"
-            content={relationship_and_family.love_style}
-          />
-          <DetailItem
-            title="최적 인연"
-            content={relationship_and_family.partner_affinity}
-          />
-          <DetailItem
-            title="사회적 패턴"
-            content={relationship_and_family.social_pattern}
-          />
-        </Section>
-
-        <Section
-          title="재물운 및 성공 전략"
-          icon="💰"
-          color="#F4B400"
-          initialOpen={false}
-        >
-          <DetailItem
-            title="재복의 성질"
-            content={wealth_and_career.wealth_type}
-          />
-          <DetailItem
-            title="추천 직업"
-            content={wealth_and_career.best_career}
-          />
-          <DetailItem
-            title="재물 조언"
-            content={wealth_and_career.financial_advice}
-          />
-        </Section>
-      </div>
-
-      {/* 광고 2 */}
-      <div style={{ margin: "40px 0 20px 0" }}>
-        <ins
-          className="adsbygoogle"
-          style={{ display: "block" }}
-          data-ad-client="YOUR_ADSENSE_CLIENT_ID"
-          data-ad-slot="YOUR_AD_SLOT_ID_BOTTOM"
-          data-ad-format="auto"
-          data-full-width-responsive="true"
-        ></ins>
-        <Script id="adsense-push-bottom" strategy="afterInteractive">
-          {`(adsbygoogle = window.adsbygoogle || []).push({});`}
-        </Script>
-      </div>
-
-      {/* footer 버튼 */}
-      <div style={styles.footer}>
-        <button style={styles.grayBtn} onClick={handleCopy}>
-          📎복사
-        </button>
-        <button style={styles.kakaoBtn} onClick={handleKakaoShare}>
-          💬공유
-        </button>
-        <button style={styles.blackBtn} onClick={() => router.push("/init")}>
-          🏠메인
-        </button>
-      </div>
-    </div>
+    </>
   );
 };
 
 /* =========================================
-   📌 스타일
+   스타일
 ========================================= */
 const styles = {
   container: {
@@ -350,6 +437,59 @@ const styles = {
     border: `1px solid ${KAKAO.border}`,
     boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
     fontFamily: "'Pretendard', sans-serif",
+  },
+
+  /* 전체화면 로딩 */
+  loadingFull: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100vw",
+    height: "100vh",
+    background: "rgba(255,255,255,0.95)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 9999,
+  },
+
+  loadingCard: {
+    padding: "40px",
+    background: "#fff",
+    borderRadius: "15px",
+    border: "1px solid #eee",
+    textAlign: "center",
+    width: "80%",
+    maxWidth: "350px",
+  },
+
+  requestInfo: {
+    marginBottom: "20px",
+    fontSize: "15px",
+    color: "#555",
+    lineHeight: 1.6,
+  },
+
+  loadingText: {
+    fontSize: "18px",
+    fontWeight: "700",
+    marginBottom: "15px",
+  },
+
+  loadingSub: {
+    marginTop: "15px",
+    fontSize: "14px",
+    color: "#888",
+  },
+
+  spinner: {
+    width: "40px",
+    height: "40px",
+    border: "4px solid #eee",
+    borderTop: `4px solid ${KAKAO.yellow}`,
+    borderRadius: "50%",
+    animation: "spin 0.8s linear infinite",
+    margin: "0 auto",
   },
 
   title: {
@@ -366,7 +506,6 @@ const styles = {
     color: KAKAO.gray5,
   },
 
-  /* 메인 카드 */
   mainCard: {
     padding: "35px",
     borderRadius: "20px",
@@ -376,10 +515,7 @@ const styles = {
     boxShadow: "0 15px 35px rgba(0,0,0,0.20)",
   },
 
-  mainTheme: {
-    fontSize: "24px",
-    fontWeight: "900",
-  },
+  mainTheme: { fontSize: "24px", fontWeight: "900" },
 
   divider: {
     width: "50px",
@@ -395,7 +531,6 @@ const styles = {
     whiteSpace: "pre-wrap",
   },
 
-  /* 섹션 */
   sectionWrap: {
     display: "flex",
     flexDirection: "column",
@@ -431,10 +566,7 @@ const styles = {
 
   icon: { fontSize: "22px", marginRight: "10px" },
 
-  toggleIcon: {
-    fontSize: "22px",
-    fontWeight: "900",
-  },
+  toggleIcon: { fontSize: "22px", fontWeight: "900" },
 
   sectionContent: {
     overflow: "hidden",
@@ -442,11 +574,8 @@ const styles = {
     padding: "0 24px",
   },
 
-  sectionContentInner: {
-    padding: "18px 0",
-  },
+  sectionContentInner: { padding: "18px 0" },
 
-  /* Detail */
   detailItem: {
     padding: "18px",
     background: "#fafafa",
@@ -462,10 +591,7 @@ const styles = {
     color: KAKAO.gray1,
   },
 
-  listDot: {
-    color: KAKAO.yellow,
-    marginRight: "6px",
-  },
+  listDot: { color: KAKAO.yellow, marginRight: "6px" },
 
   detailContent: {
     whiteSpace: "pre-wrap",
@@ -474,11 +600,10 @@ const styles = {
     fontSize: "15px",
   },
 
-  /* Footer Button Area */
   footer: {
     marginTop: "40px",
-    display: "flex",
-    justifyContent: "center",
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
     gap: "10px",
   },
 
@@ -510,35 +635,6 @@ const styles = {
     fontWeight: "700",
     cursor: "pointer",
     color: "#000",
-  },
-
-  /* Loading */
-  loadingCard: {
-    padding: "40px",
-    background: "#fff",
-    borderRadius: "15px",
-    border: "1px solid #eee",
-    textAlign: "center",
-  },
-
-  loadingText: {
-    fontSize: "18px",
-    fontWeight: "700",
-    marginBottom: "15px",
-  },
-
-  loadingBar: {
-    width: "80%",
-    height: "10px",
-    background: "#eee",
-    margin: "0 auto",
-    borderRadius: "5px",
-  },
-
-  loadingFill: {
-    width: "100%",
-    height: "100%",
-    background: KAKAO.yellow,
   },
 };
 

@@ -11,8 +11,8 @@ const agingRepository = {
 
   savePrediction: async (birth, gender, isMarried, isDating, resultData) => {
     const sql = `
-        INSERT INTO aging_results (user_input, result_data)
-        VALUES ($1, $2)
+        INSERT INTO aging_results (user_input, result_data, status)
+        VALUES ($1, $2, 'Y')
         RETURNING result_id;
     `;
 
@@ -27,6 +27,18 @@ const agingRepository = {
 
     const result = await query(sql, [userInputJson, resultDataJson]);
     return result.rows[0].result_id; // 새로 생성된 result_id 반환
+  },
+
+  deletePrediction: async (existId) => {
+    const sql = `
+    UPDATE aging_results 
+    SET status = 'N', delete_at = NOW()
+    WHERE result_id = $1
+  `;
+
+    await query(sql, [existId]);
+
+    return existId;
   },
 };
 

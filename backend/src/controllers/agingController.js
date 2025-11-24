@@ -13,6 +13,23 @@ const agingController = {
       });
     }
   },
+
+  reInit: async (req, res) => {
+    const { birthDate, gender, isMarried, isDating } = req.body;
+    const result = await agingService.reInit(
+      birthDate,
+      gender,
+      isMarried,
+      isDating
+    );
+    if (result.success) {
+      res.status(200).json({
+        success: true,
+        data: result.data,
+        resultId: result.resultId,
+      });
+    }
+  },
 };
 
 module.exports = agingController;

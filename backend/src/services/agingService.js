@@ -55,7 +55,7 @@ const agingService = {
 각 항목 생성 규칙:
 - THEME: 전체 내용을 1줄로 요약하여 어떤 사람이라고 명시 ( 예시 - 서촌에 흩날리는 은행잎 같은 사람 )
 - ADVICE: 2~3줄 조언
-- 나머지 항목(CORE_TRAIT, STRENGTH, WEAKNESS, LOVE_STYLE, PARTNER_AFFINITY, SOCIAL_PATTERN, WEALTH_TYPE, BEST_CAREER, FINANCIAL_ADVICE)은 모두 10~12문장 장문
+- 나머지 항목(CORE_TRAIT, STRENGTH, WEAKNESS, LOVE_STYLE, PARTNER_AFFINITY, SOCIAL_PATTERN, WEALTH_TYPE, BEST_CAREER, FINANCIAL_ADVICE)은 모두 1~2문장 장문
 - 이야기 하듯 내용을 적어주고 과한 유머도 가능해
 - 문자열 내부에서 따옴표("), 특수 따옴표(“, ”, ‘, ’) 금지
 - 인용문 금지
@@ -71,31 +71,31 @@ ADVICE:
 [3~4줄]
 
 CORE_TRAIT:
-[10~12문장]
+[1~2문장]
 
 STRENGTH:
-[10~12문장]
+[1~2문장]
 
 WEAKNESS:
-[10~12문장]
+[1~2문장]
 
 LOVE_STYLE:
-[10~12문장]
+[1~2문장]
 
 PARTNER_AFFINITY:
-[10~12문장]
+[1~2문장]
 
 SOCIAL_PATTERN:
-[10~12문장]
+[1~2문장]
 
 WEALTH_TYPE:
-[10~12문장]
+[1~2문장]
 
 BEST_CAREER:
-[10~12문장]
+[1~2문장]
 
 FINANCIAL_ADVICE:
-[10~12문장]
+[1~2문장]
 
 사용자 정보:
 - 생년월일: ${birth}
@@ -214,6 +214,96 @@ ${isMarried === "N" ? (isDating === "Y" ? "- 연애 중" : "- 솔로") : ""}
       isDating
     );
     return p?.result_id;
+  },
+
+  reInit: async (birth, gender, isMarried, isDating) => {
+    // 기존 저장된 결과 확인
+    const existId = await agingService.checkResultData(
+      birth,
+      gender,
+      isMarried,
+      isDating
+    );
+
+    if (existId) {
+      await agingRepository.deletePrediction(existId);
+    }
+
+    // 프롬프트 생성
+    const prompt = agingService.createSectionPrompt(
+      birth,
+      gender,
+      isMarried,
+      isDating
+    );
+
+    // GPT 요청
+    const res = await openai.chat.completions.create({
+      model: MODEL,
+      messages: [
+        {
+          role: "system",
+          content:
+            "너는 감성적 운세 스토리텔링 작가이다. 반드시 포맷을 지켜서 출력한다.",
+        },
+        { role: "user", content: prompt },
+      ],
+      max_tokens: 9000,
+    });
+
+    const raw = res.choices[0].message.content;
+
+    console.log("\n====== GPT RAW OUTPUT ======");
+    console.log(raw);
+    console.log("============================\n");
+
+    // JSON 파싱용 키 목록
+    const keys = [
+      "THEME",
+      "ADVICE",
+      "CORE_TRAIT",
+      "STRENGTH",
+      "WEAKNESS",
+      "LOVE_STYLE",
+      "PARTNER_AFFINITY",
+      "SOCIAL_PATTERN",
+      "WEALTH_TYPE",
+      "BEST_CAREER",
+      "FINANCIAL_ADVICE",
+    ];
+
+    const sections = {};
+
+    // 마지막 블록까지 100% 잡는 정규식
+    keys.forEach((key) => {
+      const regex = new RegExp(`${key}:(.*?)(?=\\n[A-Z_]+:|$)`, "s");
+      const match = raw.match(regex);
+      sections[key] = match ? match[1].trim() : "";
+    });
+
+    // 템플릿에 삽입
+    let finalJsonStr = agingService.fillTemplate(JSON_TEMPLATE, sections);
+
+    // 제어문자 제거 (JSON.parse 에러 0%)
+    const sanitized = finalJsonStr.replace(/[\u0000-\u0019]+/g, " ");
+
+    console.log("\n====== Sanitized JSON (Before Parse) ======");
+    console.log(sanitized);
+    console.log("===========================================\n");
+
+    // JSON 파싱
+    const finalObj = JSON.parse(sanitized);
+
+    // DB 저장
+    const saveId = await agingRepository.savePrediction(
+      birth,
+      gender,
+      isMarried,
+      isDating,
+      finalObj
+    );
+
+    return { success: true, data: finalObj, resultId: saveId };
   },
 };
 

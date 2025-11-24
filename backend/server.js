@@ -12,6 +12,7 @@ const PORT = process.env.PORT || 3000;
 const corsOptions = {
   // origin: "http://localhost:3001",
   origin: [
+    // "http://localhost:3001",
     "https://bbalrang.com",
     "https://www.bbalrang.com",
     "https://aging-curve-guest-frontend.onrender.com",

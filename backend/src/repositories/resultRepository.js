@@ -3,7 +3,7 @@ const { query, pool } = require("../config/db"); // 트랜잭션을 위해 pool 
 const resultRepository = {
   getId: async (resultId) => {
     const sql = `
-      SELECT * FROM aging_results WHERE result_id = $1
+      SELECT * FROM aging_results WHERE result_id = $1 AND status = 'Y'
         `;
     const result = await query(sql, [resultId]);
     return result.rows[0];
@@ -19,7 +19,7 @@ const resultRepository = {
     const userInputJson = JSON.stringify(userInputData);
 
     const sql = `
-      SELECT * FROM aging_results WHERE user_input = $1
+      SELECT * FROM aging_results WHERE user_input = $1 AND status = 'Y'
       ORDER BY created_at DESC
       LIMIT 1;
     `;
