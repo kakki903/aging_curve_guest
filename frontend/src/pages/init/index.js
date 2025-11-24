@@ -214,7 +214,7 @@ const InitFortunePage = () => {
       <Script
         id="adsense-init"
         strategy="afterInteractive"
-        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=YOUR_ADSENSE_CLIENT_ID"
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5063634047102858"
         crossOrigin="anonymous"
         onLoad={() => {
           try {
@@ -231,8 +231,8 @@ const InitFortunePage = () => {
         <ins
           className="adsbygoogle"
           style={{ display: "block", textAlign: "center" }}
-          data-ad-client="YOUR_ADSENSE_CLIENT_ID"
-          data-ad-slot="YOUR_AD_SLOT_ID"
+          data-ad-client="ca-pub-5063634047102858"
+          data-ad-slot="2915246442"
           data-ad-format="auto"
           data-full-width-responsive="true"
         ></ins>

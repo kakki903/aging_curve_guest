@@ -234,7 +234,7 @@ const ResultPage = () => {
           className="adsbygoogle"
           style={{ display: "block" }}
           data-ad-client="ca-pub-5063634047102858"
-          data-ad-slot="YOUR_AD_SLOT_ID_TOP"
+          data-ad-slot="2915246442"
           data-ad-format="auto"
           data-full-width-responsive="true"
         ></ins>
