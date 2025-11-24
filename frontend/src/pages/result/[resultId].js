@@ -324,13 +324,13 @@ const ResultPage = () => {
       {/* footer 버튼 */}
       <div style={styles.footer}>
         <button style={styles.grayBtn} onClick={handleCopy}>
-          📎 링크 복사
+          📎복사
         </button>
         <button style={styles.kakaoBtn} onClick={handleKakaoShare}>
-          💬 카톡 공유
+          💬공유
         </button>
         <button style={styles.blackBtn} onClick={() => router.push("/init")}>
-          🏠 메인
+          🏠메인
         </button>
       </div>
     </div>
