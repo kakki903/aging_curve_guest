@@ -210,7 +210,7 @@ const ResultPage = () => {
       <Script
         id="adsense-init"
         strategy="afterInteractive"
-        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=YOUR_ADSENSE_CLIENT_ID"
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5063634047102858"
         crossOrigin="anonymous"
       />
 
@@ -233,7 +233,7 @@ const ResultPage = () => {
         <ins
           className="adsbygoogle"
           style={{ display: "block" }}
-          data-ad-client="YOUR_ADSENSE_CLIENT_ID"
+          data-ad-client="ca-pub-5063634047102858"
           data-ad-slot="YOUR_AD_SLOT_ID_TOP"
           data-ad-format="auto"
           data-full-width-responsive="true"
