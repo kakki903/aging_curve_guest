@@ -117,7 +117,7 @@ const ResultPage = () => {
   /* 오류 시 자동 이동 */
   useEffect(() => {
     if (!loading && (error || !fortuneData || !inputData)) {
-      router.replace("/init");
+      router.replace("/");
     }
   }, [loading, error, fortuneData, inputData]);
 
@@ -251,7 +251,7 @@ const ResultPage = () => {
 
       <div style={styles.container}>
         <Head>
-          <title>사주 분석 결과</title>
+          <title>빨랑 사주</title>
         </Head>
 
         {/* 카카오 */}
@@ -411,7 +411,7 @@ const ResultPage = () => {
             💬 카톡 공유
           </button>
 
-          <button style={styles.blackBtn} onClick={() => router.push("/init")}>
+          <button style={styles.blackBtn} onClick={() => router.push("/")}>
             🏠 메인으로
           </button>
 
